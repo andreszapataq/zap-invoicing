@@ -55,6 +55,6 @@ export function fmt(n: number) {
   );
 }
 
-export function nextDocNumber(type: DocType, count: number) {
-  return (type === "invoice" ? 1054 : 2001) + count;
+export function nextDocNumber(type: DocType, lastNumber: number | null) {
+  return lastNumber === null ? (type === "invoice" ? 1054 : 2001) : lastNumber + 1;
 }

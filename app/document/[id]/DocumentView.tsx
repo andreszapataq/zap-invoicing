@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useReactToPrint } from "react-to-print";
 import { DocumentRecord, fmt, calcTotals } from "@/lib/types";
 import { ZapLogo } from "@/components/ZapLogo";
+import { DeleteDocumentButton } from "@/components/DeleteDocumentButton";
 
 export function DocumentView({ record }: { record: DocumentRecord }) {
   const printRef = useRef<HTMLDivElement>(null);
@@ -34,6 +35,12 @@ export function DocumentView({ record }: { record: DocumentRecord }) {
           ← Volver
         </Link>
         <div className="flex gap-2">
+          <DeleteDocumentButton
+            id={record.id}
+            type={record.type}
+            number={record.number}
+            className="text-xs px-3 py-2 border border-stone-200 rounded-md text-red-600 hover:bg-red-50 disabled:opacity-50"
+          />
           <button
             onClick={shareWhatsApp}
             className="text-xs px-3 py-2 border border-stone-200 rounded-md hover:bg-stone-50"

@@ -4,6 +4,7 @@ import { createServerSupabase } from "@/lib/supabase-server";
 import { ZapLogo } from "@/components/ZapLogo";
 import { fmt, DEMO_LIMIT, DocumentRecord } from "@/lib/types";
 import { LogoutButton } from "./LogoutButton";
+import { DeleteDocumentButton } from "@/components/DeleteDocumentButton";
 
 export default async function DashboardPage() {
   const supabase = await createServerSupabase();
@@ -64,33 +65,45 @@ export default async function DashboardPage() {
       ) : (
         <div className="bg-white border border-stone-200 rounded-xl overflow-hidden">
           {docs.map((r, i) => (
-            <Link
+            <div
               key={r.id}
-              href={`/document/${r.id}`}
-              className={`flex justify-between items-center px-4 py-3 hover:bg-stone-50 ${
+              className={`flex items-center hover:bg-stone-50 ${
                 i < docs.length - 1 ? "border-b border-stone-100" : ""
               }`}
             >
-              <div>
-                <div className="text-sm font-medium">
-                  {r.client}
-                  <span
-                    className={`ml-2 text-xs px-2 py-0.5 rounded-full font-medium ${
-                      r.type === "invoice" ? "bg-red-50 text-red-900" : "bg-blue-50 text-blue-900"
-                    }`}
-                  >
-                    {r.type === "invoice" ? `Factura #${r.number}` : `Cotización #${r.number}`}
-                  </span>
+              <Link
+                href={`/document/${r.id}`}
+                className="flex flex-1 justify-between items-center pl-4 pr-2 py-3"
+              >
+                <div>
+                  <div className="text-sm font-medium">
+                    {r.client}
+                    <span
+                      className={`ml-2 text-xs px-2 py-0.5 rounded-full font-medium ${
+                        r.type === "invoice" ? "bg-red-50 text-red-900" : "bg-blue-50 text-blue-900"
+                      }`}
+                    >
+                      {r.type === "invoice" ? `Factura #${r.number}` : `Cotización #${r.number}`}
+                    </span>
+                  </div>
+                  <div className="text-xs text-stone-500 mt-0.5">
+                    {r.project} · {new Date(r.created_at).toLocaleDateString("es-CO")}
+                  </div>
                 </div>
-                <div className="text-xs text-stone-500 mt-0.5">
-                  {r.project} · {new Date(r.created_at).toLocaleDateString("es-CO")}
+                <div className="text-right">
+                  <div className="text-sm font-medium">{fmt(Number(r.total))}</div>
+                  <div className="text-xs text-blue-600">Ver →</div>
                 </div>
-              </div>
-              <div className="text-right">
-                <div className="text-sm font-medium">{fmt(Number(r.total))}</div>
-                <div className="text-xs text-blue-600">Ver →</div>
-              </div>
-            </Link>
+              </Link>
+              <DeleteDocumentButton
+                id={r.id}
+                type={r.type}
+                number={r.number}
+                className="self-stretch px-3 text-stone-400 hover:text-red-600 text-lg disabled:opacity-50"
+              >
+                ×
+              </DeleteDocumentButton>
+            </div>
           ))}
         </div>
       )}

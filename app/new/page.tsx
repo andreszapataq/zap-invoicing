@@ -23,6 +23,15 @@ export default async function NewDocumentPage({
   const used = count || 0;
   if (used >= DEMO_LIMIT) redirect("/dashboard");
 
-  const number = nextDocNumber(type, used);
+  // Basado en el número más alto (no en el conteo) para no repetir números tras eliminar documentos
+  const { data: last } = await supabase
+    .from("documents")
+    .select("number")
+    .eq("type", type)
+    .order("number", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const number = nextDocNumber(type, last?.number ?? null);
   return <NewDocumentForm type={type} suggestedNumber={number} />;
 }
