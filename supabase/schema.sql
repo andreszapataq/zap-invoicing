@@ -1,4 +1,4 @@
--- ZAP Blinds Solutions — Schema de la demo
+-- ZAP Blinds Solutions — Schema
 -- Ejecutar en Supabase Dashboard → SQL Editor
 
 -- Tabla de documentos (cotizaciones y facturas)

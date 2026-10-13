@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createServerSupabase } from "@/lib/supabase-server";
 import { ZapLogo } from "@/components/ZapLogo";
-import { fmt, DEMO_LIMIT, DocumentRecord } from "@/lib/types";
+import { fmt, fmtDate, monthIndex, monthName, DocumentRecord } from "@/lib/types";
 import { LogoutButton } from "./LogoutButton";
 import { DeleteDocumentButton } from "@/components/DeleteDocumentButton";
 
@@ -17,11 +17,17 @@ export default async function DashboardPage() {
     .order("created_at", { ascending: false });
 
   const docs = (records || []) as DocumentRecord[];
-  const quotesUsed = docs.filter((r) => r.type === "quote").length;
-  const invoicesUsed = docs.filter((r) => r.type === "invoice").length;
+  const invoices = docs.filter((r) => r.type === "invoice");
   const totalQuoted = docs.filter((r) => r.type === "quote").reduce((s, r) => s + Number(r.total), 0);
-  const totalBilled = docs.filter((r) => r.type === "invoice").reduce((s, r) => s + Number(r.total), 0);
-  const limitReached = quotesUsed >= DEMO_LIMIT && invoicesUsed >= DEMO_LIMIT;
+  const totalBilled = invoices.reduce((s, r) => s + Number(r.total), 0);
+
+  const currentMonth = monthIndex(new Date());
+  const invoicesThisMonth = invoices.filter((r) => monthIndex(r.created_at) === currentMonth);
+  const billedThisMonth = invoicesThisMonth.reduce((s, r) => s + Number(r.total), 0);
+  const billedLastMonth = invoices
+    .filter((r) => monthIndex(r.created_at) === currentMonth - 1)
+    .reduce((s, r) => s + Number(r.total), 0);
+  const monthSub = monthComparison(billedThisMonth, billedLastMonth, currentMonth - 1, invoicesThisMonth.length);
 
   return (
     <div className="max-w-3xl mx-auto p-6">
@@ -39,23 +45,13 @@ export default async function DashboardPage() {
       <div className="grid grid-cols-3 gap-2.5 mb-5">
         <Stat label="Cotizado" value={fmt(totalQuoted)} />
         <Stat label="Facturado" value={fmt(totalBilled)} />
-        <Stat label="Uso demo" value={`${quotesUsed + invoicesUsed}/4`} />
+        <Stat label="Facturado este mes" value={fmt(billedThisMonth)} sub={monthSub} />
       </div>
 
       <div className="flex gap-2 mb-5">
-        <NewButton type="quote" used={quotesUsed} />
-        <NewButton type="invoice" used={invoicesUsed} />
+        <NewButton type="quote" />
+        <NewButton type="invoice" />
       </div>
-
-      {limitReached && (
-        <div className="bg-blue-50 rounded-xl p-4 mb-5">
-          <div className="font-medium text-sm text-blue-900 mb-1">Límite de demo alcanzado</div>
-          <div className="text-xs text-blue-800 leading-relaxed">
-            Has usado los 4 documentos. Activa la versión completa: cotizaciones y facturas ilimitadas, alertas
-            de seguimiento, base de datos de clientes y analítica.
-          </div>
-        </div>
-      )}
 
       <div className="text-sm font-medium mb-2">Actividad reciente</div>
       {docs.length === 0 ? (
@@ -87,7 +83,7 @@ export default async function DashboardPage() {
                     </span>
                   </div>
                   <div className="text-xs text-stone-500 mt-0.5">
-                    {r.project} · {new Date(r.created_at).toLocaleDateString("es-CO")}
+                    {r.project} · {fmtDate(r.created_at)}
                   </div>
                 </div>
                 <div className="text-right">
@@ -111,37 +107,33 @@ export default async function DashboardPage() {
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
     <div className="bg-stone-100 rounded-md p-3.5">
       <div className="text-xs text-stone-500 mb-1">{label}</div>
       <div className="text-xl font-medium">{value}</div>
+      {sub && <div className="text-xs text-stone-500 mt-0.5">{sub}</div>}
     </div>
   );
 }
 
-function NewButton({ type, used }: { type: "quote" | "invoice"; used: number }) {
-  const remaining = DEMO_LIMIT - used;
-  const disabled = remaining <= 0;
-  const label = type === "quote" ? "cotización" : "factura";
+function monthComparison(current: number, previous: number, previousMonth: number, invoiceCount: number) {
+  // Sin facturación el mes anterior el porcentaje no tiene sentido: mostrar el número de facturas
+  if (previous <= 0) return `${invoiceCount} ${invoiceCount === 1 ? "factura" : "facturas"}`;
+  const pct = Math.round(((current - previous) / previous) * 100);
+  const arrow = pct > 0 ? "↑" : pct < 0 ? "↓" : "=";
+  return `${arrow} ${Math.abs(pct)}% vs ${monthName(previousMonth)}`;
+}
 
-  if (disabled) {
-    return (
-      <button
-        disabled
-        className="bg-zap-red text-white px-4 py-2.5 rounded-md text-sm font-medium opacity-40 cursor-not-allowed"
-      >
-        + Nueva {label} (límite)
-      </button>
-    );
-  }
+function NewButton({ type }: { type: "quote" | "invoice" }) {
+  const label = type === "quote" ? "cotización" : "factura";
 
   return (
     <Link
       href={`/new?type=${type}`}
       className="bg-zap-red hover:bg-zap-redDark text-white px-4 py-2.5 rounded-md text-sm font-medium"
     >
-      + Nueva {label} ({remaining} disponibles)
+      + Nueva {label}
     </Link>
   );
 }

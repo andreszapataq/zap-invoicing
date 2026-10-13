@@ -3,7 +3,7 @@
 import { useRef } from "react";
 import Link from "next/link";
 import { useReactToPrint } from "react-to-print";
-import { DocumentRecord, fmt, calcTotals } from "@/lib/types";
+import { DocumentRecord, fmt, fmtDate, calcTotals } from "@/lib/types";
 import { ZapLogo } from "@/components/ZapLogo";
 import { DeleteDocumentButton } from "@/components/DeleteDocumentButton";
 
@@ -69,7 +69,7 @@ export function DocumentView({ record }: { record: DocumentRecord }) {
           <div className="text-right">
             <div className="text-2xl font-medium">{isInvoice ? "Factura" : "Cotización"}</div>
             <div className="text-xs text-zap-red font-medium mt-0.5">
-              {new Date(record.created_at).toLocaleDateString("es-CO")}
+              {fmtDate(record.created_at)}
             </div>
             <div className="text-xs text-stone-500 mt-0.5">#{record.number}</div>
           </div>

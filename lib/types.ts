@@ -1,5 +1,6 @@
 export const SC_TAX_RATE = 0.06;
-export const DEMO_LIMIT = 2;
+// Zona horaria del negocio (Greenville, SC); el servidor de Vercel corre en UTC
+export const BUSINESS_TZ = "America/New_York";
 
 export type DocType = "quote" | "invoice";
 
@@ -55,6 +56,29 @@ export function fmt(n: number) {
       maximumFractionDigits: 2,
     })
   );
+}
+
+export function fmtDate(d: string | Date) {
+  return new Date(d).toLocaleDateString("es-CO", { timeZone: BUSINESS_TZ });
+}
+
+// Mes como entero (año * 12 + mes) en la zona horaria del negocio, para comparar meses fácilmente
+export function monthIndex(d: string | Date) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: BUSINESS_TZ,
+    year: "numeric",
+    month: "numeric",
+  }).formatToParts(new Date(d));
+  const year = Number(parts.find((p) => p.type === "year")!.value);
+  const month = Number(parts.find((p) => p.type === "month")!.value);
+  return year * 12 + (month - 1);
+}
+
+export function monthName(index: number) {
+  return new Date(Date.UTC(Math.floor(index / 12), index % 12, 15)).toLocaleDateString("es-CO", {
+    month: "long",
+    timeZone: "UTC",
+  });
 }
 
 export function nextDocNumber(type: DocType, lastNumber: number | null) {

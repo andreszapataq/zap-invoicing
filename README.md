@@ -1,6 +1,6 @@
-# ZAP Blinds Solutions — Portal de facturación (Demo)
+# ZAP Blinds Solutions — Portal de facturación
 
-Demo de cotizaciones y facturas para ZAP Blinds Solutions, construido en Next.js 14 + Supabase + Vercel.
+Portal de cotizaciones y facturas para ZAP Blinds Solutions, construido en Next.js 16 + Supabase + Vercel.
 
 ## Stack
 
@@ -49,9 +49,9 @@ supabase/
 └── schema.sql          Schema de la base de datos
 ```
 
-## Lógica de la demo
+## Lógica de negocio
 
-- Solo permite **2 cotizaciones + 2 facturas** por usuario
+- Cotizaciones y facturas **ilimitadas**
 - Las cotizaciones **NO** llevan tax (replicando el formato actual de Ruben)
 - Las facturas calculan **6% sales tax de South Carolina** automáticamente
 - El descuento se aplica antes de calcular el tax
@@ -67,7 +67,7 @@ Configura las variables de entorno en el dashboard de Vercel:
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 
-## Próximos pasos (versión completa)
+## Próximos pasos
 
 - Base de datos de clientes recurrentes
 - Conversión de cotización → factura con un clic

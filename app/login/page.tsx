@@ -55,8 +55,6 @@ export default function LoginPage() {
         >
           {loading ? "Ingresando..." : "Ingresar"}
         </button>
-
-        <div className="text-center text-xs text-stone-400 mt-4">Demo · 2 cotizaciones · 2 facturas</div>
       </form>
     </div>
   );
