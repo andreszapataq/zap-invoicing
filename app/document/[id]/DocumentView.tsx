@@ -79,6 +79,8 @@ export function DocumentView({ record }: { record: DocumentRecord }) {
           <div>
             <div className="text-xs text-stone-500 mb-1">{isInvoice ? "Facturar a" : "Cotizado para"}</div>
             <div className="text-sm">{record.client}</div>
+            {record.address && <div className="text-xs text-stone-500">{record.address}</div>}
+            {record.city && <div className="text-xs text-stone-500">{record.city}</div>}
             <div className="text-xs text-stone-500">{record.phone}</div>
           </div>
           <div>

@@ -17,6 +17,8 @@ export type DocumentRecord = {
   number: number;
   client: string;
   phone?: string;
+  address?: string;
+  city?: string;
   project?: string;
   items: LineItem[];
   discount: number;

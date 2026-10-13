@@ -9,6 +9,8 @@ create table if not exists public.documents (
   number int not null,
   client text not null,
   phone text,
+  address text,
+  city text,
   project text,
   items jsonb not null default '[]'::jsonb,
   discount numeric(12,2) default 0,
@@ -19,6 +21,10 @@ create table if not exists public.documents (
   status text default 'draft',
   created_at timestamptz default now()
 );
+
+-- Migración: dirección y ciudad del cliente (para tablas ya existentes)
+alter table public.documents add column if not exists address text;
+alter table public.documents add column if not exists city text;
 
 -- Índices
 create index if not exists documents_user_id_idx on public.documents(user_id);

@@ -13,6 +13,8 @@ export function NewDocumentForm({ type, suggestedNumber }: Props) {
   const supabase = createClient();
   const [client, setClient] = useState("");
   const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
+  const [city, setCity] = useState("");
   const [project, setProject] = useState("");
   const [items, setItems] = useState<LineItem[]>([{ desc: "", qty: 1, unit: 0, ft2: "" }]);
   const [discount, setDiscount] = useState(0);
@@ -49,6 +51,8 @@ export function NewDocumentForm({ type, suggestedNumber }: Props) {
         number: suggestedNumber,
         client,
         phone,
+        address,
+        city,
         project,
         items,
         discount,
@@ -96,6 +100,24 @@ export function NewDocumentForm({ type, suggestedNumber }: Props) {
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="(864) 451-2146"
+            />
+          </Field>
+        </div>
+        <div className="grid grid-cols-2 gap-3 mb-3">
+          <Field label="Dirección">
+            <input
+              className="zap-input"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              placeholder="215 Main St"
+            />
+          </Field>
+          <Field label="Ciudad">
+            <input
+              className="zap-input"
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              placeholder="Greenville, SC 29601"
             />
           </Field>
         </div>
