@@ -26,13 +26,15 @@ export const QUOTE_TEXT = {
     "for the following items. It has been prepared with your specific requirements in mind, using " +
     "high-quality products and reliable systems that guarantee excellent performance.",
   taxNote: "Prices do not include sales tax.",
-  validity: (until: string) => `This quotation is valid for ${QUOTE_VALID_DAYS} days (until ${until}).`,
+  // Sin fecha límite explícita para dejar la cotización un poco más abierta
+  validity: `This quotation is valid for ${QUOTE_VALID_DAYS} days.`,
   closing:
     "I look forward to receiving your comments, answering any questions you may have, or making any " +
     "adjustments you wish to request. It would be a pleasure to assist you with your project.",
+  acceptanceTitle: "Customer Acceptance",
   acceptance:
-    "Acceptance of quotation: the prices, specifications and terms above are satisfactory and are " +
-    "hereby accepted. ZAP Blinds Solutions is authorized to proceed as specified.",
+    "The prices, specifications and terms above are satisfactory and are hereby accepted. " +
+    "ZAP Blinds Solutions is authorized to proceed as specified.",
 };
 
 export const INVOICE_TEXT = {
@@ -49,7 +51,7 @@ export const INVOICE_TEXT = {
 // Texto editable con que se precarga el campo "Notas / Términos" del formulario
 export const DEFAULT_NOTES: Record<DocType, string> = {
   quote:
-    "Delivery time: 20 to 25 calendar days. Screens exceeding 3 meters (10 ft) in length: 60 to 70 calendar days.\n" +
+    "Delivery time: 20 to 25 calendar days. Screens exceeding 3 meters (10 ft) in length: 50 to 60 calendar days.\n" +
     "Payment terms: 70% upon signing of the agreement or contract; the remaining 30% upon delivery and the client's full satisfaction.",
   // Las formas de pago ya van fijas en la factura; las notas quedan libres
   invoice: "",

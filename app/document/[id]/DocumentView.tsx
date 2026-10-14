@@ -12,9 +12,31 @@ import {
   PAYMENT_TERMS,
   SC_TAX_RATE,
 } from "@/lib/types";
-import { COMPANY, INVOICE_TEXT, QUOTE_TEXT, QUOTE_VALID_DAYS } from "@/lib/documentText";
+import { COMPANY, INVOICE_TEXT, QUOTE_TEXT } from "@/lib/documentText";
 import { ZapLogo } from "@/components/ZapLogo";
 import { DeleteDocumentButton } from "@/components/DeleteDocumentButton";
+
+// Hoja carta con márgenes reales (react-to-print por defecto deja margin: 0). En el margen inferior van
+// el contacto y el contador de páginas, así no le quitan espacio al contenido y se repiten en cada hoja.
+// Los dibuja el navegador: Chrome/Edge sí, Safari no (ahí el contacto igual aparece en el encabezado).
+const marginText = { font: "9px Inter, system-ui, sans-serif", color: "#78716c" };
+export const PRINT_PAGE_STYLE = `
+  @page {
+    size: letter;
+    margin: 0.45in 0.55in 0.5in;
+    @bottom-left {
+      content: "PHONE: ${COMPANY.phone}  ·  E-mail: ${COMPANY.email}  ·  ${COMPANY.website}";
+      font: ${marginText.font};
+      color: ${marginText.color};
+    }
+    @bottom-right {
+      content: "Page " counter(page) " of " counter(pages);
+      font: ${marginText.font};
+      color: ${marginText.color};
+    }
+  }
+  html, body { background: white; }
+`;
 
 export function DocumentView({ record }: { record: DocumentRecord }) {
   const printRef = useRef<HTMLDivElement>(null);
@@ -23,6 +45,7 @@ export function DocumentView({ record }: { record: DocumentRecord }) {
   const handlePrint = useReactToPrint({
     contentRef: printRef,
     documentTitle: `ZAP ${docTitle} ${record.number} - ${record.client}`,
+    pageStyle: PRINT_PAGE_STYLE,
   });
   const totals = calcTotals(record.items, record.type, record.discount);
   // Facturas anteriores a los términos de pago se tratan como "Due on receipt"
@@ -38,7 +61,6 @@ export function DocumentView({ record }: { record: DocumentRecord }) {
     : [
         ["Quote #", String(record.number)],
         ["Date", fmtDocDate(record.created_at)],
-        ["Valid Until", fmtDocDate(record.created_at, QUOTE_VALID_DAYS)],
       ];
 
   // El mensaje va al cliente, por eso en inglés como el documento
@@ -55,7 +77,7 @@ export function DocumentView({ record }: { record: DocumentRecord }) {
   }
 
   return (
-    <div className="max-w-3xl mx-auto p-6">
+    <div className="max-w-3xl mx-auto p-6 print:p-0 print:max-w-none">
       <div className="flex justify-between items-center mb-5 no-print">
         <Link
           href="/dashboard"
@@ -88,9 +110,9 @@ export function DocumentView({ record }: { record: DocumentRecord }) {
       <div
         ref={printRef}
         lang="en"
-        className="bg-white border border-stone-200 rounded-xl p-10 text-stone-900"
+        className="bg-white border border-stone-200 rounded-xl p-10 text-stone-900 print:border-0 print:rounded-none print:p-0"
       >
-        <div className="flex justify-between items-start mb-8">
+        <div className="flex justify-between items-start mb-8 print:mb-5">
           <div>
             <ZapLogo size={72} />
             <div className="text-xs text-stone-500 mt-3">
@@ -118,7 +140,7 @@ export function DocumentView({ record }: { record: DocumentRecord }) {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-6 pb-4 mb-5 border-b border-stone-200">
+        <div className="grid grid-cols-2 gap-6 pb-4 mb-5 print:pb-3 print:mb-4 border-b border-stone-200">
           <div>
             <div className="text-xs text-stone-500 mb-1 uppercase tracking-wide">
               {isInvoice ? "Bill To" : "Prepared For"}
@@ -137,13 +159,13 @@ export function DocumentView({ record }: { record: DocumentRecord }) {
         </div>
 
         {!isInvoice && (
-          <div className="text-xs text-stone-700 leading-relaxed mb-5 space-y-2">
+          <div className="text-xs text-stone-700 leading-relaxed mb-5 print:mb-3 space-y-2 print:space-y-1">
             <p>{QUOTE_TEXT.greeting(record.client)}</p>
             <p>{QUOTE_TEXT.intro}</p>
           </div>
         )}
 
-        <table className="w-full text-xs border-collapse mb-6">
+        <table className="w-full text-xs border-collapse mb-6 print:mb-3">
           <thead>
             <tr className="border-b border-stone-300">
               <th className="text-center py-2 px-1 font-medium text-stone-500 w-12">Qty</th>
@@ -158,13 +180,13 @@ export function DocumentView({ record }: { record: DocumentRecord }) {
               const amount = lineAmount(it);
               return (
                 <tr key={i} className="border-b border-stone-100">
-                  <td className="text-center py-2.5 px-1">{it.qty}</td>
-                  <td className="py-2.5 px-1">{it.desc || "—"}</td>
-                  <td className="text-center py-2.5 px-1 text-stone-500">{it.ft2 || "—"}</td>
-                  <td className="text-right py-2.5 px-1">
+                  <td className="text-center py-2.5 print:py-1.5 px-1">{it.qty}</td>
+                  <td className="py-2.5 print:py-1.5 px-1">{it.desc || "—"}</td>
+                  <td className="text-center py-2.5 print:py-1.5 px-1 text-stone-500">{it.ft2 || "—"}</td>
+                  <td className="text-right py-2.5 print:py-1.5 px-1">
                     {Number(it.unit) ? fmtUSD(Number(it.unit)) : "—"}
                   </td>
-                  <td className="text-right py-2.5 px-1 font-medium">
+                  <td className="text-right py-2.5 print:py-1.5 px-1 font-medium">
                     {amount ? fmtUSD(amount) : "No charge"}
                   </td>
                 </tr>
@@ -191,7 +213,7 @@ export function DocumentView({ record }: { record: DocumentRecord }) {
                 <span>{fmtUSD(totals.tax)}</span>
               </div>
             )}
-            <div className="flex justify-between pt-3 mt-2 border-t border-stone-300">
+            <div className="flex justify-between pt-3 mt-2 print:pt-2 print:mt-1 border-t border-stone-300">
               <span className="text-sm font-medium">{isInvoice ? "Amount Due (USD)" : "Total"}</span>
               <span className="text-base font-medium text-zap-red">{fmtUSD(totals.total)}</span>
             </div>
@@ -200,19 +222,19 @@ export function DocumentView({ record }: { record: DocumentRecord }) {
         </div>
 
         {(record.notes || !isInvoice) && (
-          <div className="mt-6 pt-4 border-t border-stone-200 text-xs text-stone-600 leading-relaxed">
+          <div className="mt-6 pt-4 print:mt-4 print:pt-3 border-t border-stone-200 text-xs text-stone-600 leading-relaxed">
             <div className="text-xs font-medium text-stone-900 mb-1 uppercase tracking-wide">
               {isInvoice ? "Notes" : "Terms & Conditions"}
             </div>
             {record.notes && <div className="whitespace-pre-line">{record.notes}</div>}
             {!isInvoice && (
-              <div>{QUOTE_TEXT.validity(fmtDocDate(record.created_at, QUOTE_VALID_DAYS))}</div>
+              <div>{QUOTE_TEXT.validity}</div>
             )}
           </div>
         )}
 
         {isInvoice && (
-          <div className="mt-6 pt-4 border-t border-stone-200 text-xs text-stone-600 leading-relaxed">
+          <div className="mt-6 pt-4 print:mt-4 print:pt-3 border-t border-stone-200 text-xs text-stone-600 leading-relaxed">
             <div className="text-xs font-medium text-stone-900 mb-1 uppercase tracking-wide">
               Payment Methods
             </div>
@@ -232,24 +254,31 @@ export function DocumentView({ record }: { record: DocumentRecord }) {
           </div>
         ) : (
           <>
-            <div className="mt-6 text-xs text-stone-700 leading-relaxed">
-              <p>{QUOTE_TEXT.closing}</p>
-              <p className="mt-4">Sincerely,</p>
-              <p className="mt-3 text-sm font-semibold text-stone-900">{COMPANY.signer}</p>
-              <p>{COMPANY.signerTitle}</p>
-            </div>
+            <p className="mt-5 print:mt-3 text-xs text-stone-700 leading-relaxed">{QUOTE_TEXT.closing}</p>
 
-            <div className="mt-8 pt-4 border-t border-stone-200 text-xs text-stone-600 break-inside-avoid">
-              <p className="leading-relaxed">{QUOTE_TEXT.acceptance}</p>
-              <div className="grid grid-cols-[2fr_1fr] gap-8 mt-8">
-                <div className="border-t border-stone-400 pt-1">Customer Signature</div>
-                <div className="border-t border-stone-400 pt-1">Date</div>
+            {/* Firma de Ruben y aceptación del cliente lado a lado, para que la cotización quepa en una hoja */}
+            <div className="grid grid-cols-2 gap-10 mt-5 print:mt-4 text-xs break-inside-avoid">
+              <div className="text-stone-700">
+                <p>Sincerely,</p>
+                <p className="mt-8 print:mt-6 text-sm font-semibold text-stone-900">{COMPANY.signer}</p>
+                <p>{COMPANY.signerTitle}</p>
+                <p>{COMPANY.name}</p>
+              </div>
+              <div className="text-stone-600">
+                <div className="font-medium text-stone-900 uppercase tracking-wide">
+                  {QUOTE_TEXT.acceptanceTitle}
+                </div>
+                <p className="mt-1 text-[11px] leading-snug">{QUOTE_TEXT.acceptance}</p>
+                <div className="grid grid-cols-[2fr_1fr] gap-4 mt-8 print:mt-6">
+                  <div className="border-t border-stone-400 pt-1">Signature</div>
+                  <div className="border-t border-stone-400 pt-1">Date</div>
+                </div>
               </div>
             </div>
           </>
         )}
 
-        <div className="mt-8 pt-3 border-t border-stone-200 text-center text-[11px] text-stone-500">
+        <div className="mt-8 pt-3 border-t border-stone-200 text-center text-[11px] text-stone-500 print:hidden">
           PHONE: <strong className="text-stone-700">{COMPANY.phone}</strong> · E-mail: {COMPANY.email} ·{" "}
           {COMPANY.website}
         </div>
