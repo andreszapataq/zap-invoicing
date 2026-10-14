@@ -13,7 +13,10 @@ export function DocumentView({ record }: { record: DocumentRecord }) {
   // wa.me solo admite texto (no archivos), así que se envía el enlace a la página pública del documento.
   // El mensaje va al cliente, por eso en inglés como el documento.
   function shareWhatsApp() {
-    const link = `${window.location.origin}/d/${record.share_id}`;
+    // En producción el enlace usa siempre el dominio oficial (NEXT_PUBLIC_SITE_URL), aunque Ruben haya
+    // entrado por otra URL (p. ej. una de preview, que pide login de Vercel). Sin la variable, la URL actual.
+    const base = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, "") || window.location.origin;
+    const link = `${base}/d/${record.share_id}`;
     const text = encodeURIComponent(
       `Hello ${record.client}, here is your ${isInvoice ? "invoice" : "quote"} #${record.number} ` +
         `from ZAP Blinds Solutions for ${fmtUSD(Number(record.total))}:\n${link}\n\n` +
