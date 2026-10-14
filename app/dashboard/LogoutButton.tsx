@@ -14,7 +14,7 @@ export function LogoutButton() {
   }
 
   return (
-    <button onClick={logout} className="text-xs text-stone-500 hover:text-stone-900 underline">
+    <button onClick={logout} className="text-sm sm:text-xs text-stone-500 hover:text-stone-900 underline py-2">
       Salir
     </button>
   );

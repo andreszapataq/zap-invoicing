@@ -38,8 +38,12 @@ export type DocumentRecord = {
   notes?: string;
   payment_terms?: PaymentTerms | null;
   status: string;
+  share_id: string;
   created_at: string;
 };
+
+// Lo que se necesita para pintar el documento; es también lo que devuelve get_shared_document()
+export type SheetData = Omit<DocumentRecord, "id" | "user_id" | "status" | "share_id">;
 
 // Como en las cotizaciones de Ruben: si la línea tiene ft², el precio es por ft²; si no, por unidad
 export function lineAmount(it: LineItem) {

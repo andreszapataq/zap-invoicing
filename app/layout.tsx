@@ -1,5 +1,14 @@
 import "./globals.css";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+
+// viewport-fit=cover: las barras fijas inferiores usan env(safe-area-inset-bottom) para no quedar
+// debajo de la barra de inicio del iPhone
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#fafaf9",
+};
 
 export const metadata: Metadata = {
   title: "ZAP Blinds Solutions — Portal de facturación",

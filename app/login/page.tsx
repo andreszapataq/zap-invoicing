@@ -33,17 +33,19 @@ export default function LoginPage() {
 
         <label className="block text-xs text-stone-500 mb-1">Correo</label>
         <input
-          className="w-full px-3 py-2 text-sm border border-stone-200 rounded-md mb-3"
+          className="w-full px-3 py-2 text-base sm:text-sm border border-stone-200 rounded-md mb-3"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           type="email"
+          autoComplete="username"
         />
         <label className="block text-xs text-stone-500 mb-1">Contraseña</label>
         <input
-          className="w-full px-3 py-2 text-sm border border-stone-200 rounded-md mb-4"
+          className="w-full px-3 py-2 text-base sm:text-sm border border-stone-200 rounded-md mb-4"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           type="password"
+          autoComplete="current-password"
         />
 
         {error && <div className="text-xs text-red-600 mb-3">{error}</div>}

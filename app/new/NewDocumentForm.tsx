@@ -6,6 +6,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase";
 import { calcTotals, DocType, fmt, lineAmount, LineItem, PAYMENT_TERMS, PaymentTerms, parseNum } from "@/lib/types";
 import { DEFAULT_NOTES } from "@/lib/documentText";
+import { formatPhone } from "@/lib/phone";
 
 type Props = { type: DocType; suggestedNumber: number };
 
@@ -69,7 +70,7 @@ export function NewDocumentForm({ type, suggestedNumber }: Props) {
         type,
         number: suggestedNumber,
         client,
-        phone,
+        phone: formatPhone(phone),
         address,
         city,
         project,
@@ -93,37 +94,41 @@ export function NewDocumentForm({ type, suggestedNumber }: Props) {
   }
 
   return (
-    <div className="max-w-3xl mx-auto p-6">
-      <div className="flex items-center gap-3 mb-5">
+    <div className="max-w-3xl mx-auto px-3 pt-4 pb-6 sm:p-6">
+      <div className="flex items-center gap-3 mb-4 sm:mb-5">
         <Link
           href="/dashboard"
-          className="text-xs px-3 py-1.5 border border-stone-200 rounded-md hover:bg-stone-50"
+          className="text-sm sm:text-xs px-3 py-2 sm:py-1.5 border border-stone-200 rounded-md hover:bg-stone-50"
         >
           ← Volver
         </Link>
         <div className="text-base font-medium">Nueva {label}</div>
       </div>
 
-      <div className="bg-white border border-stone-200 rounded-xl p-5 mb-4">
-        <div className="grid grid-cols-2 gap-3 mb-3">
+      <div className="bg-white border border-stone-200 rounded-xl p-4 sm:p-5 mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
           <Field label="Cliente">
             <input
               className="zap-input"
               value={client}
               onChange={(e) => setClient(e.target.value)}
-              placeholder="Mr. Jason Smith / Jama LLC"
+              placeholder="Mr. Jason Smith / JAMa LLC"
+              autoComplete="off"
             />
           </Field>
           <Field label="Teléfono">
             <input
               className="zap-input"
+              type="tel"
+              inputMode="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
+              onBlur={() => setPhone(formatPhone(phone))}
               placeholder="(864) 451-2146"
             />
           </Field>
         </div>
-        <div className="grid grid-cols-2 gap-3 mb-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
           <Field label="Dirección">
             <input
               className="zap-input"
@@ -171,9 +176,9 @@ export function NewDocumentForm({ type, suggestedNumber }: Props) {
         </p>
       </div>
 
-      <div className="bg-white border border-stone-200 rounded-xl p-5">
+      <div className="bg-white border border-stone-200 rounded-xl p-4 sm:p-5">
         {/* Mismo orden que el documento impreso y las cotizaciones de Ruben: Cant. · Descripción · Ft² · V. Unit */}
-        <div className="grid grid-cols-[60px_2fr_80px_80px_100px_30px] gap-2 text-xs text-stone-500 pb-2 border-b border-stone-100">
+        <div className="hidden sm:grid grid-cols-[60px_2fr_80px_80px_100px_30px] gap-2 text-xs text-stone-500 pb-2 border-b border-stone-100">
           <div>Cant.</div>
           <div>Descripción</div>
           <div>
@@ -184,44 +189,64 @@ export function NewDocumentForm({ type, suggestedNumber }: Props) {
           <div></div>
         </div>
 
+        {/* Celular: cada línea es una tarjeta (descripción arriba, números debajo).
+            Computador: una fila con las columnas del encabezado */}
         {items.map((it, i) => (
           <div
             key={i}
-            className="grid grid-cols-[60px_2fr_80px_80px_100px_30px] gap-2 items-center text-sm py-2 border-b border-stone-100"
+            className="grid grid-cols-3 sm:grid-cols-[60px_2fr_80px_80px_100px_30px] gap-2 items-end sm:items-center py-3 sm:py-2 border-b border-stone-100"
           >
-            <input
-              className="zap-input"
-              inputMode="decimal"
-              value={it.qty}
-              onChange={(e) => updateItem(i, "qty", e.target.value)}
-            />
-            <input
-              className="zap-input"
-              value={it.desc}
-              onChange={(e) => updateItem(i, "desc", e.target.value)}
-              placeholder="Motorized Roller Shades with Metal Structure"
-            />
-            <input
-              className="zap-input"
-              inputMode="decimal"
-              value={it.ft2}
-              onChange={(e) => updateItem(i, "ft2", e.target.value)}
-              placeholder="399"
-            />
-            <input
-              className="zap-input"
-              inputMode="decimal"
-              value={it.unit}
-              onChange={(e) => updateItem(i, "unit", e.target.value)}
-              placeholder="24.00"
-            />
-            <div className="text-right font-medium">{fmt(lineAmount(lineItems[i]))}</div>
+            <div className="col-span-3 sm:col-span-1 sm:order-2">
+              <MobileLabel>Descripción</MobileLabel>
+              <input
+                className="zap-input"
+                value={it.desc}
+                onChange={(e) => updateItem(i, "desc", e.target.value)}
+                placeholder="Motorized Roller Shades with Metal Structure"
+              />
+            </div>
+            <div className="sm:order-1">
+              <MobileLabel>Cant.</MobileLabel>
+              <input
+                className="zap-input"
+                inputMode="decimal"
+                value={it.qty}
+                onChange={(e) => updateItem(i, "qty", e.target.value)}
+              />
+            </div>
+            <div className="sm:order-3">
+              <MobileLabel>Ft² (opc.)</MobileLabel>
+              <input
+                className="zap-input"
+                inputMode="decimal"
+                value={it.ft2}
+                onChange={(e) => updateItem(i, "ft2", e.target.value)}
+                placeholder="399"
+              />
+            </div>
+            <div className="sm:order-4">
+              <MobileLabel>V. Unit</MobileLabel>
+              <input
+                className="zap-input"
+                inputMode="decimal"
+                value={it.unit}
+                onChange={(e) => updateItem(i, "unit", e.target.value)}
+                placeholder="24.00"
+              />
+            </div>
+            <div className="col-span-2 sm:col-span-1 sm:order-5 text-sm font-medium sm:text-right">
+              <span className="sm:hidden text-stone-500 font-normal">Total línea: </span>
+              {fmt(lineAmount(lineItems[i]))}
+            </div>
             <button
               onClick={() => removeItem(i)}
-              className="text-stone-400 hover:text-red-500 text-lg"
+              disabled={items.length === 1}
+              className="sm:order-6 justify-self-end text-sm sm:text-lg text-stone-400 hover:text-red-500 disabled:opacity-30 px-1"
               type="button"
+              aria-label="Quitar línea"
             >
-              ×
+              <span className="sm:hidden">Quitar</span>
+              <span className="hidden sm:inline">×</span>
             </button>
           </div>
         ))}
@@ -230,18 +255,18 @@ export function NewDocumentForm({ type, suggestedNumber }: Props) {
           Con Ft², el total de la línea es Ft² × V. Unit (precio por ft²). Sin Ft², es Cant. × V. Unit.
         </p>
 
-        <div className="mt-3 grid grid-cols-[1fr_auto] gap-2">
+        <div className="mt-3 grid grid-cols-2 sm:grid-cols-[1fr_auto] gap-2">
           <button
             onClick={addItem}
             type="button"
-            className="border border-dashed border-stone-300 py-2 rounded-md text-xs hover:bg-stone-50"
+            className="border border-dashed border-stone-300 px-3 py-2.5 sm:py-2 rounded-md text-sm sm:text-xs hover:bg-stone-50"
           >
             + Agregar línea
           </button>
           <button
             onClick={addFreeInstallation}
             type="button"
-            className="border border-dashed border-stone-300 px-3 py-2 rounded-md text-xs hover:bg-stone-50"
+            className="border border-dashed border-stone-300 px-3 py-2.5 sm:py-2 rounded-md text-sm sm:text-xs hover:bg-stone-50"
           >
             + Instalación gratuita
           </button>
@@ -252,7 +277,7 @@ export function NewDocumentForm({ type, suggestedNumber }: Props) {
           <div className="flex justify-between items-center py-1 gap-3">
             <span className="text-stone-500">Descuento</span>
             <input
-              className="zap-input w-28 text-right"
+              className="zap-input max-w-[8rem] text-right"
               inputMode="decimal"
               value={discount}
               onChange={(e) => setDiscount(e.target.value)}
@@ -269,7 +294,7 @@ export function NewDocumentForm({ type, suggestedNumber }: Props) {
         <div className="mt-4">
           <Field label={type === "invoice" ? "Notas (en inglés)" : "Entrega y forma de pago (en inglés)"}>
             <textarea
-              className="zap-input min-h-[96px]"
+              className="zap-input min-h-[140px] sm:min-h-[96px]"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder={type === "invoice" ? "70% deposit invoice per signed agreement." : undefined}
@@ -279,7 +304,7 @@ export function NewDocumentForm({ type, suggestedNumber }: Props) {
             <button
               type="button"
               onClick={() => setNotes(DEFAULT_NOTES[type])}
-              className="text-xs text-stone-500 hover:text-zap-red mt-1"
+              className="text-xs text-stone-500 hover:text-zap-red mt-1 py-1"
             >
               Restaurar texto predeterminado
             </button>
@@ -287,30 +312,40 @@ export function NewDocumentForm({ type, suggestedNumber }: Props) {
         </div>
       </div>
 
-      <div className="flex gap-2 mt-4">
-        <button
-          onClick={save}
-          disabled={saving || !client}
-          className="bg-zap-red hover:bg-zap-redDark disabled:opacity-50 text-white px-5 py-2.5 rounded-md text-sm font-medium"
-        >
-          {saving ? "Guardando..." : `Generar ${label} →`}
-        </button>
-        <Link
-          href="/dashboard"
-          className="px-5 py-2.5 border border-stone-200 rounded-md text-sm hover:bg-stone-50"
-        >
-          Cancelar
-        </Link>
+      {/* Celular: botones fijos abajo con el total a la vista */}
+      <div className="sticky bottom-0 z-10 -mx-3 sm:mx-0 mt-4 px-3 sm:px-0 pt-3 sm:pt-0 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:pb-0 bg-stone-50/95 sm:bg-transparent backdrop-blur sm:backdrop-blur-none border-t border-stone-200 sm:border-0 sm:static">
+        <div className="flex gap-2">
+          <button
+            onClick={save}
+            disabled={saving || !client}
+            className="flex-1 sm:flex-none bg-zap-red hover:bg-zap-redDark disabled:opacity-50 text-white px-5 py-3 sm:py-2.5 rounded-md text-sm font-medium"
+          >
+            {saving ? "Guardando..." : `Generar ${label} · ${fmt(totals.total)}`}
+          </button>
+          <Link
+            href="/dashboard"
+            className="px-5 py-3 sm:py-2.5 border border-stone-200 bg-white rounded-md text-sm hover:bg-stone-50"
+          >
+            Cancelar
+          </Link>
+        </div>
       </div>
 
       <style jsx>{`
         .zap-input {
           width: 100%;
-          padding: 6px 10px;
-          font-size: 13px;
+          padding: 8px 10px;
+          /* 16px en el celular: con menos, Safari de iOS hace zoom al tocar el campo */
+          font-size: 16px;
           border: 1px solid #e7e5e4;
           border-radius: 6px;
           background: white;
+        }
+        @media (min-width: 640px) {
+          .zap-input {
+            padding: 6px 10px;
+            font-size: 13px;
+          }
         }
         .zap-input:focus {
           outline: none;
@@ -329,6 +364,10 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       {children}
     </div>
   );
+}
+
+function MobileLabel({ children }: { children: React.ReactNode }) {
+  return <div className="sm:hidden text-xs text-stone-500 mb-1">{children}</div>;
 }
 
 function Row({ label, value }: { label: string; value: string }) {

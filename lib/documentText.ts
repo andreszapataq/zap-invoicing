@@ -19,6 +19,10 @@ export const COMPANY = {
 
 export const QUOTE_VALID_DAYS = 30;
 
+export function docTitle(doc: { type: DocType }) {
+  return doc.type === "invoice" ? "Invoice" : "Quote";
+}
+
 export const QUOTE_TEXT = {
   greeting: (client: string) => `Dear ${client},`,
   intro:
