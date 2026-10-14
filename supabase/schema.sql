@@ -26,6 +26,10 @@ create table if not exists public.documents (
 alter table public.documents add column if not exists address text;
 alter table public.documents add column if not exists city text;
 
+-- Migración: términos de pago de la factura (define la fecha de vencimiento)
+alter table public.documents add column if not exists payment_terms text
+  check (payment_terms in ('due_on_receipt', 'net_15', 'net_30'));
+
 -- Índices
 create index if not exists documents_user_id_idx on public.documents(user_id);
 create index if not exists documents_created_at_idx on public.documents(created_at desc);

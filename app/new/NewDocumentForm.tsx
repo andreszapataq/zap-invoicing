@@ -4,9 +4,20 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase";
-import { calcTotals, DocType, fmt, LineItem } from "@/lib/types";
+import { calcTotals, DocType, fmt, lineAmount, LineItem, PAYMENT_TERMS, PaymentTerms, parseNum } from "@/lib/types";
+import { DEFAULT_NOTES } from "@/lib/documentText";
 
 type Props = { type: DocType; suggestedNumber: number };
+
+// Los campos numéricos se editan como texto (más cómodo que type="number") y se convierten al calcular
+type FormItem = { desc: string; qty: string; unit: string; ft2: string };
+
+const emptyItem = (): FormItem => ({ desc: "", qty: "1", unit: "", ft2: "" });
+
+function toLineItem(it: FormItem): LineItem {
+  const ft2 = parseNum(it.ft2);
+  return { desc: it.desc, qty: parseNum(it.qty), unit: parseNum(it.unit), ft2: ft2 > 0 ? String(ft2) : "" };
+}
 
 export function NewDocumentForm({ type, suggestedNumber }: Props) {
   const router = useRouter();
@@ -16,20 +27,28 @@ export function NewDocumentForm({ type, suggestedNumber }: Props) {
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
   const [project, setProject] = useState("");
-  const [items, setItems] = useState<LineItem[]>([{ desc: "", qty: 1, unit: 0, ft2: "" }]);
-  const [discount, setDiscount] = useState(0);
-  const [notes, setNotes] = useState("");
+  const [items, setItems] = useState<FormItem[]>([emptyItem()]);
+  const [discount, setDiscount] = useState("");
+  const [notes, setNotes] = useState(DEFAULT_NOTES[type]);
+  const [paymentTerms, setPaymentTerms] = useState<PaymentTerms>("due_on_receipt");
   const [saving, setSaving] = useState(false);
 
-  const totals = calcTotals(items, type, discount);
+  const lineItems = items.map(toLineItem);
+  const totals = calcTotals(lineItems, type, parseNum(discount));
   const label = type === "invoice" ? "factura" : "cotización";
 
-  function updateItem(i: number, field: keyof LineItem, value: string | number) {
+  function updateItem(i: number, field: keyof FormItem, value: string) {
     setItems((prev) => prev.map((it, idx) => (idx === i ? { ...it, [field]: value } : it)));
   }
 
   function addItem() {
-    setItems((prev) => [...prev, { desc: "", qty: 1, unit: 0, ft2: "" }]);
+    setItems((prev) => [...prev, emptyItem()]);
+  }
+
+  // Ruben siempre incluye la instalación como línea aparte, sin costo
+  function addFreeInstallation() {
+    const units = items.filter((it) => it.desc).reduce((s, it) => s + parseNum(it.qty), 0);
+    setItems((prev) => [...prev, { desc: "Free installation", qty: String(units || 1), unit: "0", ft2: "" }]);
   }
 
   function removeItem(i: number) {
@@ -54,12 +73,13 @@ export function NewDocumentForm({ type, suggestedNumber }: Props) {
         address,
         city,
         project,
-        items,
-        discount,
+        items: lineItems,
+        discount: totals.discount,
         subtotal: totals.subtotal,
         tax: totals.tax,
         total: totals.total,
         notes,
+        payment_terms: type === "invoice" ? paymentTerms : null,
         status: "draft",
       })
       .select()
@@ -91,7 +111,7 @@ export function NewDocumentForm({ type, suggestedNumber }: Props) {
               className="zap-input"
               value={client}
               onChange={(e) => setClient(e.target.value)}
-              placeholder="Sr. José"
+              placeholder="Mr. Jason Smith / Jama LLC"
             />
           </Field>
           <Field label="Teléfono">
@@ -121,24 +141,45 @@ export function NewDocumentForm({ type, suggestedNumber }: Props) {
             />
           </Field>
         </div>
-        <Field label="Proyecto">
+        <Field label="Proyecto (en inglés)">
           <input
             className="zap-input"
             value={project}
             onChange={(e) => setProject(e.target.value)}
-            placeholder="Persianas motorizadas — residencia"
+            placeholder="Motorized roller shades — residence"
           />
         </Field>
+        {type === "invoice" && (
+          <div className="mt-3">
+            <Field label="Términos de pago">
+              <select
+                className="zap-input"
+                value={paymentTerms}
+                onChange={(e) => setPaymentTerms(e.target.value as PaymentTerms)}
+              >
+                {(Object.keys(PAYMENT_TERMS) as PaymentTerms[]).map((k) => (
+                  <option key={k} value={k}>
+                    {PAYMENT_TERMS[k].label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          </div>
+        )}
+        <p className="text-xs text-stone-400 mt-3">
+          El documento se genera en inglés: escribe en inglés el proyecto, las descripciones y las notas.
+        </p>
       </div>
 
       <div className="bg-white border border-stone-200 rounded-xl p-5">
-        <div className="grid grid-cols-[2fr_60px_80px_80px_100px_30px] gap-2 text-xs text-stone-500 pb-2 border-b border-stone-100">
-          <div>Descripción</div>
+        {/* Mismo orden que el documento impreso y las cotizaciones de Ruben: Cant. · Descripción · Ft² · V. Unit */}
+        <div className="grid grid-cols-[60px_2fr_80px_80px_100px_30px] gap-2 text-xs text-stone-500 pb-2 border-b border-stone-100">
           <div>Cant.</div>
-          <div>V. Unit</div>
+          <div>Descripción</div>
           <div>
             Ft² <span className="text-stone-400">(opc.)</span>
           </div>
+          <div>V. Unit</div>
           <div className="text-right">Total</div>
           <div></div>
         </div>
@@ -146,36 +187,35 @@ export function NewDocumentForm({ type, suggestedNumber }: Props) {
         {items.map((it, i) => (
           <div
             key={i}
-            className="grid grid-cols-[2fr_60px_80px_80px_100px_30px] gap-2 items-center text-sm py-2 border-b border-stone-100"
+            className="grid grid-cols-[60px_2fr_80px_80px_100px_30px] gap-2 items-center text-sm py-2 border-b border-stone-100"
           >
+            <input
+              className="zap-input"
+              inputMode="decimal"
+              value={it.qty}
+              onChange={(e) => updateItem(i, "qty", e.target.value)}
+            />
             <input
               className="zap-input"
               value={it.desc}
               onChange={(e) => updateItem(i, "desc", e.target.value)}
-              placeholder="Persiana motorizada con estructura metálica"
+              placeholder="Motorized Roller Shades with Metal Structure"
             />
             <input
               className="zap-input"
-              type="number"
-              value={it.qty}
-              onChange={(e) => updateItem(i, "qty", Number(e.target.value))}
-            />
-            <input
-              className="zap-input"
-              type="number"
-              value={it.unit}
-              onChange={(e) => updateItem(i, "unit", Number(e.target.value))}
-              placeholder="21.00"
-            />
-            <input
-              className="zap-input"
-              value={it.ft2 || ""}
+              inputMode="decimal"
+              value={it.ft2}
               onChange={(e) => updateItem(i, "ft2", e.target.value)}
-              placeholder="380.50"
+              placeholder="399"
             />
-            <div className="text-right font-medium">
-              {fmt((Number(it.qty) || 0) * (Number(it.unit) || 0))}
-            </div>
+            <input
+              className="zap-input"
+              inputMode="decimal"
+              value={it.unit}
+              onChange={(e) => updateItem(i, "unit", e.target.value)}
+              placeholder="24.00"
+            />
+            <div className="text-right font-medium">{fmt(lineAmount(lineItems[i]))}</div>
             <button
               onClick={() => removeItem(i)}
               className="text-stone-400 hover:text-red-500 text-lg"
@@ -186,13 +226,26 @@ export function NewDocumentForm({ type, suggestedNumber }: Props) {
           </div>
         ))}
 
-        <button
-          onClick={addItem}
-          type="button"
-          className="mt-3 w-full border border-dashed border-stone-300 py-2 rounded-md text-xs hover:bg-stone-50"
-        >
-          + Agregar línea
-        </button>
+        <p className="text-xs text-stone-400 mt-2">
+          Con Ft², el total de la línea es Ft² × V. Unit (precio por ft²). Sin Ft², es Cant. × V. Unit.
+        </p>
+
+        <div className="mt-3 grid grid-cols-[1fr_auto] gap-2">
+          <button
+            onClick={addItem}
+            type="button"
+            className="border border-dashed border-stone-300 py-2 rounded-md text-xs hover:bg-stone-50"
+          >
+            + Agregar línea
+          </button>
+          <button
+            onClick={addFreeInstallation}
+            type="button"
+            className="border border-dashed border-stone-300 px-3 py-2 rounded-md text-xs hover:bg-stone-50"
+          >
+            + Instalación gratuita
+          </button>
+        </div>
 
         <div className="mt-4 pt-3 border-t border-stone-200 text-sm">
           <Row label="Subtotal" value={fmt(totals.subtotal)} />
@@ -200,9 +253,9 @@ export function NewDocumentForm({ type, suggestedNumber }: Props) {
             <span className="text-stone-500">Descuento</span>
             <input
               className="zap-input w-28 text-right"
-              type="number"
+              inputMode="decimal"
               value={discount}
-              onChange={(e) => setDiscount(Number(e.target.value))}
+              onChange={(e) => setDiscount(e.target.value)}
               placeholder="0.00"
             />
           </div>
@@ -214,14 +267,23 @@ export function NewDocumentForm({ type, suggestedNumber }: Props) {
         </div>
 
         <div className="mt-4">
-          <Field label="Notas">
+          <Field label={type === "invoice" ? "Notas (en inglés)" : "Entrega y forma de pago (en inglés)"}>
             <textarea
-              className="zap-input min-h-[72px]"
+              className="zap-input min-h-[96px]"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Tiempo de entrega: 20-25 días calendario. Pago único anticipado."
+              placeholder={type === "invoice" ? "70% deposit invoice per signed agreement." : undefined}
             />
           </Field>
+          {notes !== DEFAULT_NOTES[type] && (
+            <button
+              type="button"
+              onClick={() => setNotes(DEFAULT_NOTES[type])}
+              className="text-xs text-stone-500 hover:text-zap-red mt-1"
+            >
+              Restaurar texto predeterminado
+            </button>
+          )}
         </div>
       </div>
 
